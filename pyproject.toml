@@ -109,11 +109,18 @@ mlx = "vllm_mlx.plugin:mlx_platform_plugin"
 [project.scripts]
 vllm-mlx = "vllm_mlx.cli:main"
 vllm-mlx-chat = "vllm_mlx.gradio_app:main"
+vllm-mlx-ui = "vllm_mlx.css_svg_ui:main"
+vllm-mlx-desktop = "vllm_mlx.desktop_ui:main"
 vllm-mlx-bench = "vllm_mlx.benchmark:main"
+token-workshed-ui = "vllm_mlx.css_svg_ui:main"
+token-workshed-desktop = "vllm_mlx.desktop_ui:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["vllm_mlx*"]
+
+[tool.setuptools.package-data]
+"vllm_mlx.ui_css_svg" = ["*.html", "*.css", "*.js"]
 
 [tool.black]
 line-length = 88
