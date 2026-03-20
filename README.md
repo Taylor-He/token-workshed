@@ -1,401 +1,170 @@
-# vLLM-MLX
+[README.md](https://github.com/user-attachments/files/26143061/README.md)
+# Token Workshed
 
-**vLLM-like inference for Apple Silicon** - GPU-accelerated Text, Image, Video & Audio on Mac
+Token Workshed is a custom desktop-focused fork of `vllm-mlx` for Apple Silicon Macs.
+It combines:
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Apple Silicon](https://img.shields.io/badge/Apple-Silicon-black.svg)](https://support.apple.com/en-us/HT211814)
-[![GitHub](https://img.shields.io/badge/GitHub-waybarrios%2Fvllm--mlx-blue?logo=github)](https://github.com/waybarrios/vllm-mlx)
+- a local `vllm-mlx` runtime
+- a custom CSS+SVG chat UI
+- a desktop model manager (model switching, community search/deploy, runtime options)
+- macOS `.app` / `.pkg` packaging workflow
 
-## Overview
+Current desktop release line in this repo:
 
-vllm-mlx brings native Apple Silicon GPU acceleration to vLLM by integrating:
+- `token-workshed`: `0.0.1`
+- `vllm-mlx`: `0.2.6`
 
-- **[MLX](https://github.com/ml-explore/mlx)**: Apple's ML framework with unified memory and Metal kernels
-- **[mlx-lm](https://github.com/ml-explore/mlx-lm)**: Optimized LLM inference with KV cache and quantization
-- **[mlx-vlm](https://github.com/Blaizzy/mlx-vlm)**: Vision-language models for multimodal inference
-- **[mlx-audio](https://github.com/Blaizzy/mlx-audio)**: Speech-to-Text and Text-to-Speech with native voices
-- **[mlx-embeddings](https://github.com/Blaizzy/mlx-embeddings)**: Text embeddings for semantic search and RAG
+## Highlights
 
-## Features
+- Native Apple Silicon local inference (text + multimodal support from `vllm-mlx`)
+- Desktop manager mode (`token-workshed-desktop`) with local model lifecycle control
+- Community page with Hugging Face model search and one-click download/deploy
+- One-time Hugging Face account binding popup (saved locally for authenticated search/download)
+- Startup model integrity check and cleanup for incomplete local caches
+- If no model is installed, UI still opens and shows:
+  - `To start using Token Workshed, please install a model.`
 
-- **Multimodal** - Text, Image, Video & Audio in one platform
-- **Native GPU acceleration** on Apple Silicon (M1, M2, M3, M4)
-- **Native TTS voices** - Spanish, French, Chinese, Japanese + 5 more languages
-- **OpenAI API compatible** - drop-in replacement for OpenAI client
-- **Anthropic Messages API** - native `/v1/messages` endpoint for Claude Code and OpenCode
-- **Embeddings** - OpenAI-compatible `/v1/embeddings` endpoint with mlx-embeddings
-- **Reasoning Models** - extract thinking process from Qwen3, DeepSeek-R1
-- **MCP Tool Calling** - integrate external tools via Model Context Protocol
-- **Paged KV Cache** - memory-efficient caching with prefix sharing
-- **Continuous Batching** - high throughput for multiple concurrent users
+## Requirements
 
-## Quick Start
+- macOS (Apple Silicon / arm64 recommended)
+- Python `>= 3.10`
+- Network access (for Hugging Face search/download)
 
-### Installation
-
-**Using uv (recommended):**
+## Install From Source
 
 ```bash
-# Install as CLI tool (system-wide)
-uv tool install git+https://github.com/waybarrios/vllm-mlx.git
+git clone https://github.com/<your-account>/token-workshed.git
+cd token-workshed
 
-# Or install in a project/virtual environment
-uv pip install git+https://github.com/waybarrios/vllm-mlx.git
+python3 -m venv .venv
+source .venv/bin/activate
+
+python -m pip install -U pip setuptools wheel
+python -m pip install -e .
 ```
 
-**Using pip:**
+## Run Modes
+
+### 1) Runtime only (OpenAI-compatible server)
 
 ```bash
-# Install from GitHub
-pip install git+https://github.com/waybarrios/vllm-mlx.git
-
-# Or clone and install in development mode
-git clone https://github.com/waybarrios/vllm-mlx.git
-cd vllm-mlx
-pip install -e .
+vllm-mlx serve your model --host 127.0.0.1 --port 8000
 ```
 
-### Start Server
+### 2) Web UI only (connect to an existing backend)
 
 ```bash
-# Simple mode (single user, max throughput)
-vllm-mlx serve mlx-community/Llama-3.2-3B-Instruct-4bit --port 8000
-
-# Continuous batching (multiple users)
-vllm-mlx serve mlx-community/Llama-3.2-3B-Instruct-4bit --port 8000 --continuous-batching
-
-# With API key authentication
-vllm-mlx serve mlx-community/Llama-3.2-3B-Instruct-4bit --port 8000 --api-key your-secret-key
+token-workshed-ui \
+  --server-url http://127.0.0.1:8000 \
+  --host 127.0.0.1 \
+  --port 7862 \
+  --open-browser
 ```
 
-### Use with OpenAI SDK
-
-```python
-from openai import OpenAI
-
-# Without API key (local development)
-client = OpenAI(base_url="http://localhost:8000/v1", api_key="not-needed")
-
-# With API key (production)
-client = OpenAI(base_url="http://localhost:8000/v1", api_key="your-secret-key")
-
-response = client.chat.completions.create(
-    model="default",
-    messages=[{"role": "user", "content": "Hello!"}],
-)
-print(response.choices[0].message.content)
-```
-
-### Use with Anthropic SDK
-
-vllm-mlx exposes an Anthropic-compatible `/v1/messages` endpoint, so tools like Claude Code and OpenCode can connect directly.
-
-```python
-from anthropic import Anthropic
-
-client = Anthropic(base_url="http://localhost:8000", api_key="not-needed")
-
-response = client.messages.create(
-    model="default",
-    max_tokens=256,
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-print(response.content[0].text)
-```
-
-To use with Claude Code:
+### 3) Desktop all-in-one manager (recommended)
 
 ```bash
-export ANTHROPIC_BASE_URL=http://localhost:8000
-export ANTHROPIC_API_KEY=not-needed
-claude
+token-workshed-desktop
 ```
 
-See [Anthropic Messages API docs](docs/guides/server.md#anthropic-messages-api) for streaming, tool calling, system messages, and token counting.
-
-### Multimodal (Images & Video)
+Optional explicit model:
 
 ```bash
-vllm-mlx serve mlx-community/Qwen3-VL-4B-Instruct-3bit --port 8000
+token-workshed-desktop your model
 ```
 
-```python
-response = client.chat.completions.create(
-    model="default",
-    messages=[{
-        "role": "user",
-        "content": [
-            {"type": "text", "text": "What's in this image?"},
-            {"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}
-        ]
-    }]
-)
-```
-
-### Audio (TTS/STT)
+Useful options:
 
 ```bash
-# Install audio dependencies
-pip install vllm-mlx[audio]
-python -m spacy download en_core_web_sm
-brew install espeak-ng  # macOS, for non-English languages
+token-workshed-desktop --server-port 8000 --ui-port 7862 --browser
 ```
+
+## First Launch Behavior
+
+- On first open, a one-time Hugging Face binding modal is shown.
+- Binding info is stored in local desktop state:
+  - macOS: `~/Library/Application Support/token-workshed/desktop_state.json`
+- If no local model exists, the app still opens in no-active-model mode.
+
+## Build macOS App and Installer
+
+### Build `.app` with PyInstaller
 
 ```bash
-# Text-to-Speech (English)
-python examples/tts_example.py "Hello, how are you?" --play
-
-# Text-to-Speech (Spanish)
-python examples/tts_multilingual.py "Hola mundo" --lang es --play
-
-# List available models and languages
-python examples/tts_multilingual.py --list-models
-python examples/tts_multilingual.py --list-languages
+source .venv/bin/activate
+pyinstaller --noconfirm token-workshed.spec
 ```
 
-**Supported TTS Models:**
-| Model | Languages | Description |
-|-------|-----------|-------------|
-| Kokoro | EN, ES, FR, JA, ZH, IT, PT, HI | Fast, 82M params, 11 voices |
-| Chatterbox | 15+ languages | Expressive, voice cloning |
-| VibeVoice | EN | Realtime, low latency |
-| VoxCPM | ZH, EN | High quality Chinese/English |
+Output:
 
-### Reasoning Models
+- `dist/token-workshed.app`
 
-Extract the thinking process from reasoning models like Qwen3 and DeepSeek-R1:
+### Build `.pkg` installer
 
 ```bash
-# Start server with reasoning parser
-vllm-mlx serve mlx-community/Qwen3-8B-4bit --reasoning-parser qwen3
+bash scripts/build_pkg_installer.sh 0.0.1 0.2.6 3.12.8
 ```
 
-```python
-response = client.chat.completions.create(
-    model="default",
-    messages=[{"role": "user", "content": "What is 17 × 23?"}]
-)
+Output:
 
-# Access reasoning separately from the answer
-print("Thinking:", response.choices[0].message.reasoning)
-print("Answer:", response.choices[0].message.content)
-```
+- `dist/token-workshed-0.0.1-installer.pkg`
 
-**Supported Parsers:**
-| Parser | Models | Description |
-|--------|--------|-------------|
-| `qwen3` | Qwen3 series | Requires both `<think>` and `</think>` tags |
-| `deepseek_r1` | DeepSeek-R1 | Handles implicit `<think>` tag |
-
-### Embeddings
-
-Generate text embeddings for semantic search, RAG, and similarity:
+### Install generated `.pkg`
 
 ```bash
-# Start server with an embedding model pre-loaded
-vllm-mlx serve mlx-community/Llama-3.2-3B-Instruct-4bit --embedding-model mlx-community/all-MiniLM-L6-v2-4bit
+sudo installer -pkg "dist/token-workshed-0.0.1-installer.pkg" -target /
+open "/Applications/token-workshed.app"
 ```
 
-```python
-# Generate embeddings using the OpenAI SDK
-embeddings = client.embeddings.create(
-    model="mlx-community/all-MiniLM-L6-v2-4bit",
-    input=["Hello world", "How are you?"]
-)
-print(f"Dimensions: {len(embeddings.data[0].embedding)}")
+## Project Layout
+
+```text
+vllm_mlx/
+  desktop_ui.py              # desktop manager + manager API endpoints
+  css_svg_ui.py              # web UI backend (FastAPI)
+  ui_css_svg/                # frontend assets (HTML/CSS/JS)
+scripts/
+  token_workshed_app_entry.py
+  build_pkg_installer.sh
+token-workshed.spec          # PyInstaller spec
 ```
 
-See [Embeddings Guide](docs/guides/embeddings.md) for details on supported models and lazy loading.
+## Troubleshooting
 
-## Documentation
+### App closes on startup
 
-For full documentation, see the [docs](docs/) directory:
-
-- **Getting Started**
-  - [Installation](docs/getting-started/installation.md)
-  - [Quick Start](docs/getting-started/quickstart.md)
-
-- **User Guides**
-  - [OpenAI-Compatible Server](docs/guides/server.md)
-  - [Anthropic Messages API](docs/guides/server.md#anthropic-messages-api)
-  - [Python API](docs/guides/python-api.md)
-  - [Multimodal (Images & Video)](docs/guides/multimodal.md)
-  - [Audio (STT/TTS)](docs/guides/audio.md)
-  - [Embeddings](docs/guides/embeddings.md)
-  - [Reasoning Models](docs/guides/reasoning.md)
-  - [MCP & Tool Calling](docs/guides/mcp-tools.md)
-  - [Continuous Batching](docs/guides/continuous-batching.md)
-
-- **Reference**
-  - [CLI Commands](docs/reference/cli.md)
-  - [Supported Models](docs/reference/models.md)
-  - [Configuration](docs/reference/configuration.md)
-
-- **Benchmarks**
-  - [LLM Benchmarks](docs/benchmarks/llm.md)
-  - [Image Benchmarks](docs/benchmarks/image.md)
-  - [Video Benchmarks](docs/benchmarks/video.md)
-  - [Audio Benchmarks](docs/benchmarks/audio.md)
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           vLLM API Layer                                │
-│                    (OpenAI-compatible interface)                         │
-└─────────────────────────────────────────────────────────────────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                            MLXPlatform                                  │
-│               (vLLM platform plugin for Apple Silicon)                  │
-└─────────────────────────────────────────────────────────────────────────┘
-                                   │
-        ┌─────────────┬────────────┴────────────┬─────────────┐
-        ▼             ▼                         ▼             ▼
-┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-│    mlx-lm     │ │   mlx-vlm     │ │   mlx-audio   │ │mlx-embeddings │
-│(LLM inference)│ │ (Vision+LLM)  │ │  (TTS + STT)  │ │ (Embeddings)  │
-└───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘
-        │             │                         │             │
-        └─────────────┴─────────────────────────┴─────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              MLX                                        │
-│                (Apple ML Framework - Metal kernels)                      │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-## Performance
-
-**LLM Performance (M4 Max, 128GB):**
-
-| Model | Speed | Memory |
-|-------|-------|--------|
-| Qwen3-0.6B-8bit | 402 tok/s | 0.7 GB |
-| Llama-3.2-1B-4bit | 464 tok/s | 0.7 GB |
-| Llama-3.2-3B-4bit | 200 tok/s | 1.8 GB |
-
-**Continuous Batching (5 concurrent requests):**
-
-| Model | Single | Batched | Speedup |
-|-------|--------|---------|---------|
-| Qwen3-0.6B-8bit | 328 tok/s | 1112 tok/s | **3.4x** |
-| Llama-3.2-1B-4bit | 299 tok/s | 613 tok/s | **2.0x** |
-
-**Audio - Speech-to-Text (M4 Max, 128GB):**
-
-| Model | RTF* | Use Case |
-|-------|------|----------|
-| whisper-tiny | **197x** | Real-time, low latency |
-| whisper-large-v3-turbo | **55x** | Best quality/speed balance |
-| whisper-large-v3 | **24x** | Highest accuracy |
-
-*RTF = Real-Time Factor. RTF of 100x means 1 minute transcribes in ~0.6 seconds.
-
-See [benchmarks](docs/benchmarks/) for detailed results.
-
-## Gemma 3 Support
-
-vllm-mlx includes native support for Gemma 3 vision models. Gemma 3 is automatically detected as MLLM.
-
-### Usage
+Reset desktop state and retry:
 
 ```bash
-# Start server with Gemma 3
-vllm-mlx serve mlx-community/gemma-3-27b-it-4bit --port 8000
-
-# Verify it loaded as MLLM (not LLM)
-curl http://localhost:8000/health
-# Should show: "model_type": "mllm"
+rm -f "$HOME/Library/Application Support/token-workshed/desktop_state.json"
 ```
 
-### Long Context Patch (mlx-vlm)
-
-Gemma 3's default `sliding_window=1024` limits context to ~10K tokens on Apple Silicon (Metal GPU timeout at higher context). To enable longer context (up to ~50K tokens), patch mlx-vlm:
-
-**Location:** `~/.../site-packages/mlx_vlm/models/gemma3/language.py`
-
-Find the `make_cache` method and replace with:
-
-```python
-def make_cache(self):
-    import os
-    # Set GEMMA3_SLIDING_WINDOW=8192 for ~40K context
-    # Set GEMMA3_SLIDING_WINDOW=0 for ~50K context (full KVCache)
-    sliding_window = int(os.environ.get('GEMMA3_SLIDING_WINDOW', self.config.sliding_window))
-
-    caches = []
-    for i in range(self.config.num_hidden_layers):
-        if (
-            i % self.config.sliding_window_pattern
-            == self.config.sliding_window_pattern - 1
-        ):
-            caches.append(KVCache())
-        elif sliding_window == 0:
-            caches.append(KVCache())  # Full context for all layers
-        else:
-            caches.append(RotatingKVCache(max_size=sliding_window, keep=0))
-    return caches
-```
-
-**Usage:**
+Then start again:
 
 ```bash
-# Default (~10K max context)
-vllm-mlx serve mlx-community/gemma-3-27b-it-4bit --port 8000
-
-# Extended context (~40K max)
-GEMMA3_SLIDING_WINDOW=8192 vllm-mlx serve mlx-community/gemma-3-27b-it-4bit --port 8000
-
-# Maximum context (~50K max)
-GEMMA3_SLIDING_WINDOW=0 vllm-mlx serve mlx-community/gemma-3-27b-it-4bit --port 8000
+open "/Applications/token-workshed.app"
 ```
 
-**Benchmark Results (M4 Max 128GB):**
+### `ModuleNotFoundError` (for local source run)
 
-| Setting | Max Context | Memory |
-|---------|-------------|--------|
-| Default (1024) | ~10K tokens | ~16GB |
-| `GEMMA3_SLIDING_WINDOW=8192` | ~40K tokens | ~25GB |
-| `GEMMA3_SLIDING_WINDOW=0` | ~50K tokens | ~35GB |
+Activate venv and install dependencies:
 
-## Contributing
+```bash
+source .venv/bin/activate
+python -m pip install -U pip setuptools wheel
+python -m pip install -e .
+```
 
-We welcome contributions! See [Contributing Guide](docs/development/contributing.md) for details.
+### Hugging Face 401 / gated model errors
 
-- Bug fixes and improvements
-- Performance optimizations
-- Documentation improvements
-- Benchmarks on different Apple Silicon chips
-
-Submit PRs to: [https://github.com/waybarrios/vllm-mlx](https://github.com/waybarrios/vllm-mlx)
+- Bind a valid Hugging Face token in the app popup (or rebind later through app flow)
+- Ensure you accepted model terms on the model’s Hugging Face page
 
 ## License
 
-Apache 2.0 - see [LICENSE](LICENSE) for details.
+This project remains under Apache-2.0, following the upstream license.
 
-## Citation
+## Acknowledgements
 
-If you use vLLM-MLX in your research or project, please cite:
-
-```bibtex
-@software{vllm_mlx2025,
-  author = {Barrios, Wayner},
-  title = {vLLM-MLX: Apple Silicon MLX Backend for vLLM},
-  year = {2025},
-  url = {https://github.com/waybarrios/vllm-mlx},
-  note = {Native GPU-accelerated LLM and vision-language model inference on Apple Silicon}
-}
-```
-
-## Acknowledgments
-
-- [MLX](https://github.com/ml-explore/mlx) - Apple's ML framework
-- [mlx-lm](https://github.com/ml-explore/mlx-lm) - LLM inference library
-- [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) - Vision-language models
-- [mlx-audio](https://github.com/Blaizzy/mlx-audio) - Text-to-Speech and Speech-to-Text
-- [mlx-embeddings](https://github.com/Blaizzy/mlx-embeddings) - Text embeddings
-- [vLLM](https://github.com/vllm-project/vllm) - High-throughput LLM serving
+- Upstream: [`waybarrios/vllm-mlx`](https://github.com/waybarrios/vllm-mlx)
+- Apple ML stack: MLX / mlx-lm / mlx-vlm
