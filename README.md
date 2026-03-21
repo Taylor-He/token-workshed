@@ -7,7 +7,7 @@ It combines:
 - a local `vllm-mlx` runtime
 - a custom CSS+SVG chat UI
 - a desktop model manager (model switching, community search/deploy, runtime options)
-- macOS `.app` / `.pkg` packaging workflow
+- macOS `.pkg` packaging workflow
 
 Current desktop release line in this repo:
 
