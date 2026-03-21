@@ -42,6 +42,7 @@ source .venv/bin/activate
 python -m pip install -U pip setuptools wheel
 python -m pip install -e .
 ```
+# You can also install the `.pkg` file from the releases page.  
 
 ## Run Modes
 
