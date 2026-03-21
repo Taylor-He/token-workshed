@@ -1,7 +1,7 @@
 [README.md](https://github.com/user-attachments/files/26143061/README.md)
-# Token Workshed
+# Token Workshed(for Apple Sillicon)
 
-Token Workshed is a custom desktop-focused fork of `vllm-mlx` for Apple Silicon Macs.
+Token Workshed(mlx) is a custom desktop-focused fork of `vllm-mlx` for Apple Silicon Macs.
 It combines:
 
 - a local `vllm-mlx` runtime
