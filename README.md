@@ -26,7 +26,7 @@ Current desktop release line in this repo:
 
 ## Requirements
 
-- macOS (Apple Silicon / arm64 recommended)
+- mac with Apple Silicon(Essential)
 - Python `>= 3.10`
 - Network access (for Hugging Face search/download)
 
